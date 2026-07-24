@@ -1,0 +1,66 @@
+{
+  "type": "record",
+  "name": "OrderPlaced",
+  "namespace": "io.github.kafka_trading_lab.v1",
+  "doc": "An order accepted for routing by the trading platform.",
+  "fields": [
+    {
+      "name": "event_id",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "order_id",
+      "type": "string"
+    },
+    {
+      "name": "account_id",
+      "type": "string"
+    },
+    {
+      "name": "symbol",
+      "type": "string"
+    },
+    {
+      "name": "side",
+      "type": {
+        "type": "enum",
+        "name": "OrderSide",
+        "symbols": ["BUY", "SELL"]
+      }
+    },
+    {
+      "name": "order_type",
+      "type": {
+        "type": "enum",
+        "name": "OrderType",
+        "symbols": ["MARKET", "LIMIT"]
+      }
+    },
+    {
+      "name": "quantity",
+      "type": "string",
+      "doc": "Positive decimal encoded as a canonical string."
+    },
+    {
+      "name": "limit_price",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Positive decimal required for LIMIT orders and absent for MARKET orders."
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "default": "USD"
+    },
+    {
+      "name": "placed_at",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}

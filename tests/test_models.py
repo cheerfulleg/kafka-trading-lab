@@ -4,7 +4,86 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from trading_lab.models import TradeExecuted, TradeSide
+from trading_lab.models import OrderPlaced, OrderType, TradeExecuted, TradeSide
+
+
+def test_limit_order_normalizes_and_serializes_for_avro() -> None:
+    order = OrderPlaced(
+        order_id="ORD-001",
+        account_id="ACC-001",
+        symbol="aapl",
+        side=TradeSide.BUY,
+        order_type=OrderType.LIMIT,
+        quantity=Decimal("10.50"),
+        limit_price=Decimal("189.25"),
+        currency="usd",
+        placed_at=datetime(2026, 7, 25, 12, 0, tzinfo=UTC),
+    )
+
+    payload = order.to_avro_dict()
+
+    assert order.symbol == "AAPL"
+    assert payload["quantity"] == "10.50"
+    assert payload["limit_price"] == "189.25"
+    assert payload["currency"] == "USD"
+    assert payload["placed_at"] == int(order.placed_at.timestamp() * 1000)
+
+
+@pytest.mark.parametrize(
+    ("order_type", "limit_price", "message"),
+    (
+        (OrderType.LIMIT, None, "required for LIMIT"),
+        (OrderType.MARKET, Decimal("100"), "absent for MARKET"),
+    ),
+)
+def test_order_enforces_price_semantics(
+    order_type: OrderType,
+    limit_price: Decimal | None,
+    message: str,
+) -> None:
+    with pytest.raises(ValidationError, match=message):
+        OrderPlaced(
+            order_id="ORD-001",
+            account_id="ACC-001",
+            symbol="AAPL",
+            side=TradeSide.BUY,
+            order_type=order_type,
+            quantity=Decimal("1"),
+            limit_price=limit_price,
+        )
+
+
+def test_order_rejects_naive_timestamp() -> None:
+    with pytest.raises(ValidationError, match="timezone-aware"):
+        OrderPlaced(
+            order_id="ORD-001",
+            account_id="ACC-001",
+            symbol="AAPL",
+            side=TradeSide.SELL,
+            order_type=OrderType.MARKET,
+            quantity=Decimal("1"),
+            placed_at=datetime(2026, 7, 25, 12, 0),
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (("quantity", "0"), ("limit_price", "-1")),
+)
+def test_order_rejects_non_positive_numbers(field: str, value: str) -> None:
+    payload = {
+        "order_id": "ORD-001",
+        "account_id": "ACC-001",
+        "symbol": "AAPL",
+        "side": TradeSide.BUY,
+        "order_type": OrderType.LIMIT,
+        "quantity": Decimal("1"),
+        "limit_price": Decimal("100"),
+    }
+    payload[field] = Decimal(value)
+
+    with pytest.raises(ValidationError):
+        OrderPlaced.model_validate(payload)
 
 
 def test_trade_normalizes_market_fields_and_serializes_for_avro() -> None:

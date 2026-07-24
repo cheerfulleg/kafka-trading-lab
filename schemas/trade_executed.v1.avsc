@@ -1,0 +1,57 @@
+{
+  "type": "record",
+  "name": "TradeExecuted",
+  "namespace": "io.github.kafka_trading_lab.v1",
+  "doc": "A trade accepted by the execution venue.",
+  "fields": [
+    {
+      "name": "event_id",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "trade_id",
+      "type": "string"
+    },
+    {
+      "name": "account_id",
+      "type": "string"
+    },
+    {
+      "name": "symbol",
+      "type": "string"
+    },
+    {
+      "name": "side",
+      "type": {
+        "type": "enum",
+        "name": "TradeSide",
+        "symbols": ["BUY", "SELL"]
+      }
+    },
+    {
+      "name": "quantity",
+      "type": "string",
+      "doc": "Decimal encoded as a canonical string for this learning example."
+    },
+    {
+      "name": "price",
+      "type": "string",
+      "doc": "Decimal encoded as a canonical string for this learning example."
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "default": "USD"
+    },
+    {
+      "name": "executed_at",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+.DS_Store
+.env
+.agent-logs/
+.agent-run.lock/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
+__pycache__/
+*.egg-info/
+*.py[cod]
+build/
+dist/
+codex-output.md
+codex.patch
+.idea

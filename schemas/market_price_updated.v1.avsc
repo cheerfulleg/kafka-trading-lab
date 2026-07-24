@@ -1,0 +1,42 @@
+{
+  "type": "record",
+  "name": "MarketPriceUpdated",
+  "namespace": "io.github.kafka_trading_lab.v1",
+  "doc": "The latest observed price for an instrument, keyed in Kafka by symbol.",
+  "fields": [
+    {
+      "name": "event_id",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "symbol",
+      "type": "string",
+      "doc": "Normalized instrument symbol and Kafka partition key."
+    },
+    {
+      "name": "price",
+      "type": "string",
+      "doc": "Positive decimal encoded as a canonical string."
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "default": "USD"
+    },
+    {
+      "name": "source",
+      "type": "string",
+      "doc": "Venue or market-data provider that published the observation."
+    },
+    {
+      "name": "updated_at",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}

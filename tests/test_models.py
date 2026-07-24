@@ -4,7 +4,50 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from trading_lab.models import OrderPlaced, OrderType, TradeExecuted, TradeSide
+from trading_lab.models import (
+    MarketPriceUpdated,
+    OrderPlaced,
+    OrderType,
+    TradeExecuted,
+    TradeSide,
+)
+
+
+def test_market_price_normalizes_key_and_serializes_for_avro() -> None:
+    price = MarketPriceUpdated(
+        symbol="aapl",
+        price=Decimal("189.2500"),
+        currency="usd",
+        source="NASDAQ",
+        updated_at=datetime(2026, 7, 25, 12, 0, tzinfo=UTC),
+    )
+
+    payload = price.to_avro_dict()
+
+    assert price.partition_key() == "AAPL"
+    assert payload["symbol"] == price.partition_key()
+    assert payload["price"] == "189.2500"
+    assert payload["currency"] == "USD"
+    assert payload["updated_at"] == int(price.updated_at.timestamp() * 1000)
+
+
+def test_market_price_rejects_naive_timestamp() -> None:
+    with pytest.raises(ValidationError, match="timezone-aware"):
+        MarketPriceUpdated(
+            symbol="AAPL",
+            price=Decimal("189.25"),
+            source="NASDAQ",
+            updated_at=datetime(2026, 7, 25, 12, 0),
+        )
+
+
+def test_market_price_rejects_non_positive_price() -> None:
+    with pytest.raises(ValidationError):
+        MarketPriceUpdated(
+            symbol="AAPL",
+            price=Decimal("0"),
+            source="NASDAQ",
+        )
 
 
 def test_limit_order_normalizes_and_serializes_for_avro() -> None:

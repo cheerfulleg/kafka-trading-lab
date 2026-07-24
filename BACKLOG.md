@@ -5,7 +5,7 @@ non-empty section. Each item should fit in one reviewable pull request.
 
 ## Now
 
-- [ ] Add an Avro `OrderPlaced` event with validation and round-trip tests.
+- [x] Add an Avro `OrderPlaced` event with validation and round-trip tests.
 - [ ] Add an Avro `MarketPriceUpdated` event keyed by instrument symbol.
 - [ ] Route malformed trade payloads to a dead-letter topic with error metadata.
 - [ ] Add deterministic trade IDs and demonstrate idempotent consumer handling.

@@ -4,8 +4,37 @@ from io import BytesIO
 
 from fastavro import schemaless_reader, schemaless_writer
 
-from trading_lab.models import OrderPlaced, OrderType, TradeExecuted, TradeSide
-from trading_lab.schema import parsed_order_schema, parsed_trade_schema
+from trading_lab.models import (
+    MarketPriceUpdated,
+    OrderPlaced,
+    OrderType,
+    TradeExecuted,
+    TradeSide,
+)
+from trading_lab.schema import (
+    parsed_market_price_schema,
+    parsed_order_schema,
+    parsed_trade_schema,
+)
+
+
+def test_market_price_avro_round_trip() -> None:
+    price = MarketPriceUpdated(
+        symbol="MSFT",
+        price=Decimal("440.10"),
+        currency="USD",
+        source="NASDAQ",
+        updated_at=datetime(2026, 7, 25, 15, 30, tzinfo=UTC),
+    )
+    buffer = BytesIO()
+
+    schemaless_writer(buffer, parsed_market_price_schema(), price.to_avro_dict())
+    buffer.seek(0)
+    decoded = schemaless_reader(buffer, parsed_market_price_schema())
+    restored = MarketPriceUpdated.from_avro_dict(decoded)
+
+    assert restored == price
+    assert restored.partition_key() == "MSFT"
 
 
 def test_order_avro_round_trip() -> None:

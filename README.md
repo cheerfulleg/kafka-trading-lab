@@ -8,7 +8,7 @@ event platform.
 
 - Redpanda broker with a Kafka-compatible API
 - Schema Registry and Redpanda Console
-- Versioned Avro `TradeExecuted` and `OrderPlaced` events
+- Versioned Avro `TradeExecuted`, `OrderPlaced`, and `MarketPriceUpdated` events
 - Python producer and consumer using `confluent-kafka`
 - Pydantic validation at the application boundary
 - Unit tests, Ruff, mypy, and GitHub Actions CI
@@ -69,3 +69,8 @@ decisions belong in `docs/adr/`.
 Event contracts live in `schemas/`. `OrderPlaced` supports market orders
 without a price and limit orders with a required positive limit price; its
 Pydantic model validates those semantics before serialization.
+
+`MarketPriceUpdated` uses the normalized instrument symbol as its Kafka
+partition key, preserving price-update order for each symbol. Prices are
+positive decimal strings and timestamps are normalized to UTC at the
+application boundary.

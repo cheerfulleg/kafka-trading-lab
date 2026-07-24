@@ -23,6 +23,59 @@ class OrderType(StrEnum):
     LIMIT = "LIMIT"
 
 
+class MarketPriceUpdated(BaseModel):
+    """Application representation of the version-one market price event."""
+
+    model_config = ConfigDict(frozen=True)
+
+    event_id: UUID = Field(default_factory=uuid4)
+    symbol: str = Field(min_length=1, max_length=16)
+    price: Decimal = Field(gt=0)
+    currency: str = Field(default="USD", min_length=3, max_length=3)
+    source: str = Field(min_length=1, max_length=64)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    @field_validator("symbol", "currency")
+    @classmethod
+    def uppercase_market_fields(cls, value: str) -> str:
+        return value.upper()
+
+    @field_validator("updated_at")
+    @classmethod
+    def require_timezone(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("updated_at must be timezone-aware")
+        return value.astimezone(UTC)
+
+    @field_serializer("event_id")
+    def serialize_uuid(self, value: UUID) -> str:
+        return str(value)
+
+    @field_serializer("price")
+    def serialize_decimal(self, value: Decimal) -> str:
+        return format(value, "f")
+
+    @field_serializer("updated_at")
+    def serialize_datetime(self, value: datetime) -> int:
+        return int(value.timestamp() * 1000)
+
+    def partition_key(self) -> str:
+        """Return the instrument key used to preserve per-symbol ordering."""
+
+        return self.symbol
+
+    def to_avro_dict(self) -> dict[str, object]:
+        """Return values matching the public Avro contract."""
+
+        return self.model_dump(mode="json")
+
+    @classmethod
+    def from_avro_dict(cls, payload: dict[str, object]) -> "MarketPriceUpdated":
+        """Validate and convert a decoded Avro record."""
+
+        return cls.model_validate(payload)
+
+
 class OrderPlaced(BaseModel):
     """Application representation of the version-one order event."""
 

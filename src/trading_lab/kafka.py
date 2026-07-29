@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Any
 
-from confluent_kafka import DeserializingConsumer, SerializingProducer
+from confluent_kafka import DeserializingConsumer, Producer, SerializingProducer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer, AvroSerializer
 from confluent_kafka.serialization import StringDeserializer, StringSerializer
@@ -58,6 +58,19 @@ def build_trade_consumer(settings: Settings) -> DeserializingConsumer:
             "value.deserializer": deserializer,
             "auto.offset.reset": "earliest",
             "enable.auto.commit": False,
+        }
+    )
+
+
+def build_dead_letter_producer(settings: Settings) -> Producer:
+    """Build a producer that preserves malformed records without decoding them."""
+
+    return Producer(
+        {
+            "bootstrap.servers": settings.kafka_bootstrap_servers,
+            "enable.idempotence": True,
+            "acks": "all",
+            "compression.type": "snappy",
         }
     )
 

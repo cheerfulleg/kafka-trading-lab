@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     kafka_bootstrap_servers: str = "localhost:19092"
     schema_registry_url: str = "http://localhost:8081"
     trade_topic: str = "trades.v1"
+    trade_dead_letter_topic: str = "trades.v1.dlq"
     trade_consumer_group: str = "trade-audit-v1"
 
 

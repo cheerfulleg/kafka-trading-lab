@@ -74,3 +74,8 @@ Pydantic model validates those semantics before serialization.
 partition key, preserving price-update order for each symbol. Prices are
 positive decimal strings and timestamps are normalized to UTC at the
 application boundary.
+
+Malformed `TradeExecuted` values are preserved in `trades.v1.dlq`. The raw key
+and value are republished with headers identifying the source topic, partition,
+offset, deserialization error, and UTC failure time; the consumer commits the
+source offset only after the dead-letter publish is acknowledged.

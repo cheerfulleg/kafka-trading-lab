@@ -3,10 +3,12 @@ import signal
 from types import FrameType
 from typing import cast
 
-from confluent_kafka import KafkaError
+from confluent_kafka import KafkaError, Message
+from confluent_kafka.error import ValueDeserializationError
 
 from trading_lab.config import get_settings
-from trading_lab.kafka import build_trade_consumer
+from trading_lab.dead_letter import route_to_dead_letter
+from trading_lab.kafka import build_dead_letter_producer, build_trade_consumer
 from trading_lab.models import TradeExecuted
 
 logger = logging.getLogger(__name__)
@@ -22,6 +24,7 @@ class Shutdown:
 def consume() -> None:
     settings = get_settings()
     consumer = build_trade_consumer(settings)
+    dead_letter_producer = build_dead_letter_producer(settings)
     shutdown = Shutdown()
     signal.signal(signal.SIGINT, shutdown.request)
     signal.signal(signal.SIGTERM, shutdown.request)
@@ -29,7 +32,29 @@ def consume() -> None:
 
     try:
         while not shutdown.requested:
-            message = consumer.poll(1.0)
+            try:
+                message = consumer.poll(1.0)
+            except ValueDeserializationError as error:
+                failed_message = cast(Message | None, error.kafka_message)
+                if failed_message is None:
+                    raise RuntimeError("deserialization error without a Kafka message") from error
+                route_to_dead_letter(
+                    dead_letter_producer,
+                    settings.trade_dead_letter_topic,
+                    failed_message,
+                    error,
+                )
+                logger.warning(
+                    "malformed trade routed to dead letter topic=%s source_topic=%s "
+                    "partition=%s offset=%s error_type=%s",
+                    settings.trade_dead_letter_topic,
+                    failed_message.topic(),
+                    failed_message.partition(),
+                    failed_message.offset(),
+                    type(error).__name__,
+                )
+                consumer.commit(message=failed_message, asynchronous=False)
+                continue
             if message is None:
                 continue
             error = message.error()
@@ -48,6 +73,7 @@ def consume() -> None:
             )
             consumer.commit(message=message, asynchronous=False)
     finally:
+        dead_letter_producer.flush(10)
         consumer.close()
 
 
